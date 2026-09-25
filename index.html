@@ -35,6 +35,7 @@
   .nav-links{display:flex; gap:22px; font-size:0.9rem; color:var(--muted); flex-wrap:wrap;}
   .nav-links a{text-decoration:none; transition:color .15s;}
   .nav-links a:hover{color:var(--text);}
+  .nav-links a.active{color:var(--teal);}
   @media (max-width:760px){ .nav-links{display:none;} }
 
   /* Hero */
@@ -55,6 +56,7 @@
   .btn{display:inline-block; padding:12px 22px; border-radius:8px; text-decoration:none; font-weight:500; font-size:0.94rem; transition:transform .15s, box-shadow .15s; border:none; cursor:pointer; font-family:inherit;}
   .btn-primary{background:linear-gradient(100deg,var(--violet),#7C4FE0); color:#fff;}
   .btn-primary:hover{transform:translateY(-2px); box-shadow:0 10px 26px rgba(155,107,255,.35);}
+  .btn-primary:disabled{opacity:0.6; cursor:progress; transform:none; box-shadow:none;}
   .btn-ghost{border:1px solid var(--line); color:var(--text); background:none;}
   .btn-ghost:hover{border-color:var(--teal); transform:translateY(-2px);}
 
@@ -100,6 +102,8 @@
   .gate{animation:pulse 2.4s ease-in-out infinite;}
   .gate.g2{animation-delay:.3s;} .gate.g3{animation-delay:.6s;} .gate.g4{animation-delay:.9s;} .gate.g5{animation-delay:1.2s;}
   @keyframes pulse{0%,100%{opacity:1;} 50%{opacity:.45;}}
+  .circuit-box.running .gate{animation-duration:.5s;}
+  .circuit-box.running{border-color:var(--teal);}
 
   /* results */
   .results-panel{display:none; margin-top:24px;}
@@ -156,15 +160,15 @@
 <nav>
   <div class="nav-inner">
     <div class="brand">PORTFOLIO<span class="q">Q</span></div>
-    <div class="nav-links">
-      <a href="#problem">Problem</a>
-      <a href="#simulator">Simulator</a>
-      <a href="#assets">Assets</a>
-      <a href="#quantum">Quantum</a>
-      <a href="#results">Results</a>
-      <a href="#comparison">Comparison</a>
-      <a href="#methodology">Methodology</a>
-      <a href="#about">About</a>
+    <div class="nav-links" id="navLinks">
+      <a href="#problem" data-sec="problem">Problem</a>
+      <a href="#simulator" data-sec="simulator">Simulator</a>
+      <a href="#assets" data-sec="assets">Assets</a>
+      <a href="#quantum" data-sec="quantum">Quantum</a>
+      <a href="#results" data-sec="results">Results</a>
+      <a href="#comparison" data-sec="comparison">Comparison</a>
+      <a href="#methodology" data-sec="methodology">Methodology</a>
+      <a href="#about" data-sec="about">About</a>
     </div>
   </div>
 </nav>
@@ -212,19 +216,19 @@
       <div class="field-grid">
         <div class="field">
           <label>Initial Budget — <span class="val" id="budgetVal">₹1,00,000</span></label>
-          <input type="range" min="50000" max="500000" step="10000" value="100000" oninput="document.getElementById('budgetVal').textContent='₹'+Number(this.value).toLocaleString('en-IN')">
+          <input type="range" id="budgetInput" min="50000" max="500000" step="10000" value="100000" oninput="document.getElementById('budgetVal').textContent='₹'+Number(this.value).toLocaleString('en-IN')">
         </div>
         <div class="field">
           <label>Maximum Assets — <span class="val" id="maxVal">4</span></label>
-          <input type="range" min="2" max="8" step="1" value="4" oninput="document.getElementById('maxVal').textContent=this.value">
+          <input type="range" id="maxAssetsInput" min="2" max="8" step="1" value="4" oninput="document.getElementById('maxVal').textContent=this.value">
         </div>
         <div class="field">
           <label>Risk Tolerance</label>
-          <select><option>Low</option><option selected>Medium</option><option>High</option></select>
+          <select id="riskInput"><option>Low</option><option selected>Medium</option><option>High</option></select>
         </div>
         <div class="field">
           <label>Minimum Expected Return — <span class="val" id="retVal">8%</span></label>
-          <input type="range" min="4" max="18" step="1" value="8" oninput="document.getElementById('retVal').textContent=this.value+'%'">
+          <input type="range" id="minReturnInput" min="4" max="18" step="1" value="8" oninput="document.getElementById('retVal').textContent=this.value+'%'">
         </div>
         <div class="field">
           <label>Investment Horizon</label>
@@ -275,8 +279,8 @@
       <div class="vflow-step"><span class="n">6</span> Optimal Portfolio</div>
     </div>
 
-    <div class="circuit-box">
-      <div class="circuit-label">QAOA circuit — 5 qubits, 2 layers</div>
+    <div class="circuit-box" id="circuitBox">
+      <div class="circuit-label" id="circuitLabel">QAOA circuit — 5 qubits, 2 layers</div>
       <svg viewBox="0 0 720 150" width="100%" role="img" aria-label="Quantum circuit diagram">
         <g stroke="#2A3559" stroke-width="1.5">
           <line x1="40" y1="20" x2="680" y2="20"/><line x1="40" y1="46" x2="680" y2="46"/>
@@ -339,21 +343,21 @@
     <h2>Optimized portfolio</h2>
     <p class="sub" id="resultsSub">Click "Run Optimization" above to generate a candidate portfolio for the current parameters.</p>
 
-    <div class="results-panel show">
+    <div class="results-panel show" id="resultsPanel">
       <div class="alloc-wrap">
-        <div class="donut" role="img" aria-label="Portfolio allocation donut chart"></div>
-        <div class="legend">
-          <div class="legend-item"><span class="sw" style="background:var(--violet);"></span> Asset A — 30%</div>
-          <div class="legend-item"><span class="sw" style="background:var(--teal);"></span> Asset C — 25%</div>
-          <div class="legend-item"><span class="sw" style="background:#F1C40F;"></span> Asset E — 20%</div>
-          <div class="legend-item"><span class="sw" style="background:var(--violet-dim);"></span> Asset G — 25%</div>
+        <div class="donut" id="donutChart" role="img" aria-label="Portfolio allocation donut chart"></div>
+        <div class="legend" id="legend">
+          <div class="legend-item"><span class="sw" style="background:var(--violet);"></span> Asset A — <span id="legA">30%</span></div>
+          <div class="legend-item"><span class="sw" style="background:var(--teal);"></span> Asset C — <span id="legC">25%</span></div>
+          <div class="legend-item"><span class="sw" style="background:#F1C40F;"></span> Asset E — <span id="legE">20%</span></div>
+          <div class="legend-item"><span class="sw" style="background:var(--violet-dim);"></span> Asset G — <span id="legG">25%</span></div>
         </div>
       </div>
       <div class="metrics-row">
-        <div class="metric-big"><div class="num">11.8%</div><div class="lab">Expected Return</div></div>
-        <div class="metric-big"><div class="num">6.4%</div><div class="lab">Portfolio Risk</div></div>
-        <div class="metric-big"><div class="num">0.82</div><div class="lab">Diversification</div></div>
-        <div class="metric-big"><div class="num">4 / 8</div><div class="lab">Assets Selected</div></div>
+        <div class="metric-big"><div class="num" id="metRet">11.8%</div><div class="lab">Expected Return</div></div>
+        <div class="metric-big"><div class="num" id="metRisk">6.4%</div><div class="lab">Portfolio Risk</div></div>
+        <div class="metric-big"><div class="num" id="metDiv">0.82</div><div class="lab">Diversification</div></div>
+        <div class="metric-big"><div class="num" id="metAssets">4 / 8</div><div class="lab">Assets Selected</div></div>
       </div>
     </div>
   </div>
@@ -453,11 +457,76 @@
 </footer>
 
 <script>
-function runOptimizer(){
-  document.getElementById('runStatus').textContent = 'Optimization complete — see Results below.';
-  document.getElementById('resultsSub').textContent = 'Candidate portfolio generated for the current parameters.';
-  document.getElementById('results').scrollIntoView({behavior:'smooth', block:'start'});
+function countUp(el, from, to, decimals, suffix, duration){
+  const start = performance.now();
+  function tick(now){
+    const p = Math.min((now - start) / duration, 1);
+    const eased = 1 - Math.pow(1 - p, 3);
+    const val = from + (to - from) * eased;
+    el.textContent = val.toFixed(decimals) + suffix;
+    if(p < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
 }
+
+function runOptimizer(){
+  const btns = document.querySelectorAll('.btn-primary');
+  const circuitBox = document.getElementById('circuitBox');
+  const status = document.getElementById('runStatus');
+
+  btns.forEach(b => { b.disabled = true; });
+  status.textContent = 'Running QAOA on the simulator…';
+  circuitBox.classList.add('running');
+  document.getElementById('circuitLabel').textContent = 'QAOA circuit — optimizing…';
+
+  const maxAssets = Number(document.getElementById('maxAssetsInput').value);
+  const minReturn = Number(document.getElementById('minReturnInput').value);
+  const riskTol = document.getElementById('riskInput').value;
+  const riskFactor = riskTol === 'Low' ? 0.7 : riskTol === 'High' ? 1.3 : 1.0;
+
+  setTimeout(() => {
+    circuitBox.classList.remove('running');
+    document.getElementById('circuitLabel').textContent = 'QAOA circuit — 5 qubits, 2 layers';
+
+    const baseReturn = 11.8, baseRisk = 6.4, baseDiv = 0.82;
+    const newReturn = Math.max(minReturn, baseReturn - (maxAssets - 4) * 0.4);
+    const newRisk = Math.max(2.5, baseRisk * riskFactor - (maxAssets - 4) * 0.3);
+    const newDiv = Math.min(0.95, baseDiv + (maxAssets - 4) * 0.03);
+
+    countUp(document.getElementById('metRet'), 0, newReturn, 1, '%', 900);
+    countUp(document.getElementById('metRisk'), 0, newRisk, 1, '%', 900);
+    countUp(document.getElementById('metDiv'), 0, newDiv, 2, '', 900);
+    document.getElementById('metAssets').textContent = maxAssets + ' / 8';
+
+    const pctA = 28 + (riskFactor - 1) * 6, pctC = 27 - (riskFactor - 1) * 8;
+    const pctE = 22, pctG = 100 - pctA - pctC - pctE;
+    document.getElementById('donutChart').style.background =
+      `conic-gradient(var(--violet) 0% ${pctA}%, var(--teal) ${pctA}% ${pctA+pctC}%, #F1C40F ${pctA+pctC}% ${pctA+pctC+pctE}%, var(--violet-dim) ${pctA+pctC+pctE}% 100%)`;
+    document.getElementById('legA').textContent = pctA.toFixed(0)+'%';
+    document.getElementById('legC').textContent = pctC.toFixed(0)+'%';
+    document.getElementById('legE').textContent = pctE.toFixed(0)+'%';
+    document.getElementById('legG').textContent = pctG.toFixed(0)+'%';
+
+    status.textContent = 'Optimization complete — see Results below.';
+    document.getElementById('resultsSub').textContent = 'Candidate portfolio generated for the current parameters.';
+    btns.forEach(b => { b.disabled = false; });
+    document.getElementById('results').scrollIntoView({behavior:'smooth', block:'start'});
+  }, 1300);
+}
+
+// Scroll-spy nav highlighting
+const navLinks = document.querySelectorAll('#navLinks a');
+const sections = [...navLinks].map(a => document.getElementById(a.dataset.sec)).filter(Boolean);
+const spyObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if(entry.isIntersecting){
+      navLinks.forEach(a => a.classList.remove('active'));
+      const link = document.querySelector(`#navLinks a[data-sec="${entry.target.id}"]`);
+      if(link) link.classList.add('active');
+    }
+  });
+}, { rootMargin: '-40% 0px -50% 0px' });
+sections.forEach(s => spyObserver.observe(s));
 </script>
 </body>
 </html>
