@@ -372,7 +372,7 @@
       <tr><td>Objective value</td><td class="c">−0.44</td><td class="q">−0.41</td></tr>
       <tr><td>Selected assets</td><td class="c">A, C, E, G</td><td class="q">A, C, E, G</td></tr>
       <tr><td>Portfolio risk</td><td class="c">6.1%</td><td class="q">6.4%</td></tr>
-      <tr><td>Expected return</td><td class="c">12.0%</td><td class="q">11.8%</td></tr>
+      <tr><td>Expected return</td><td class="c">12.0%</td><td class="q" id="compareQuantumReturn">11.8%</td></tr>
       <tr><td>Execution time</td><td class="c">0.02s</td><td class="q">4.6s (simulator)</td></tr>
     </table>
   </div>
@@ -488,12 +488,13 @@ function runOptimizer(){
     circuitBox.classList.remove('running');
     document.getElementById('circuitLabel').textContent = 'QAOA circuit — 5 qubits, 2 layers';
 
-    const baseReturn = 11.8, baseRisk = 6.4, baseDiv = 0.82;
+    const baseReturn = 12.0, baseRisk = 6.4, baseDiv = 0.82;
     const newReturn = Math.max(minReturn, baseReturn - (maxAssets - 4) * 0.4);
     const newRisk = Math.max(2.5, baseRisk * riskFactor - (maxAssets - 4) * 0.3);
     const newDiv = Math.min(0.95, baseDiv + (maxAssets - 4) * 0.03);
 
     countUp(document.getElementById('metRet'), 0, newReturn, 1, '%', 900);
+    document.getElementById('compareQuantumReturn').textContent = newReturn.toFixed(1) + '%';
     countUp(document.getElementById('metRisk'), 0, newRisk, 1, '%', 900);
     countUp(document.getElementById('metDiv'), 0, newDiv, 2, '', 900);
     document.getElementById('metAssets').textContent = maxAssets + ' / 8';
