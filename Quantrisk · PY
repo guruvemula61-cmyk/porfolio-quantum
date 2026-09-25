@@ -1,0 +1,141 @@
+"""
+QuantRisk — Quantum-Assisted Portfolio Optimization using QAOA
+================================================================
+QuantumXpo 2026 Project
+
+This script formulates a portfolio selection problem (choose a subset
+of assets to maximize return while minimizing risk, under a budget
+constraint) as a QUBO, solves it with QAOA (Qiskit), and benchmarks
+the result against a classical brute-force baseline.
+
+Requirements:
+    pip install qiskit qiskit-optimization qiskit-algorithms numpy matplotlib
+"""
+
+import itertools
+import numpy as np
+import matplotlib.pyplot as plt
+
+from qiskit_optimization import QuadraticProgram
+from qiskit_optimization.algorithms import MinimumEigenOptimizer
+from qiskit_algorithms import QAOA
+from qiskit_algorithms.optimizers import COBYLA
+from qiskit_algorithms.utils import algorithm_globals
+from qiskit.primitives import StatevectorSampler as Sampler
+
+algorithm_globals.random_seed = 42
+
+# ---------------------------------------------------------------
+# 1. Sample data: expected returns + covariance matrix
+#    (Replace with real historical data, e.g. via yfinance, for
+#    a live demo.)
+# ---------------------------------------------------------------
+ASSET_NAMES = ["Asset A", "Asset B", "Asset C", "Asset D",
+               "Asset E", "Asset F", "Asset G", "Asset H"]
+NUM_ASSETS = len(ASSET_NAMES)
+BUDGET = 4  # maximum number of assets to select
+
+# Demo expected returns and per-asset risk (annualized, illustrative)
+expected_returns = np.array([0.124, 0.098, 0.151, 0.072, 0.136, 0.065, 0.110, 0.102])
+asset_risk = np.array([0.082, 0.056, 0.123, 0.041, 0.097, 0.038, 0.074, 0.069])
+
+# Build a covariance matrix from the per-asset risk (variance on the
+# diagonal) plus mild correlation between assets, for a realistic demo.
+np.random.seed(42)
+correlation = np.random.uniform(0.05, 0.25, (NUM_ASSETS, NUM_ASSETS))
+correlation = (correlation + correlation.T) / 2
+np.fill_diagonal(correlation, 1.0)
+covariance = np.outer(asset_risk, asset_risk) * correlation
+
+RISK_FACTOR = 0.5  # trade-off between risk and return
+
+
+# ---------------------------------------------------------------
+# 2. Build the QUBO
+# ---------------------------------------------------------------
+def build_qubo():
+    qp = QuadraticProgram(name="portfolio_optimization")
+    for name in ASSET_NAMES:
+        qp.binary_var(name)
+
+    linear = {ASSET_NAMES[i]: -expected_returns[i] for i in range(NUM_ASSETS)}
+    quadratic = {
+        (ASSET_NAMES[i], ASSET_NAMES[j]): RISK_FACTOR * covariance[i][j]
+        for i in range(NUM_ASSETS)
+        for j in range(NUM_ASSETS)
+    }
+
+    qp.minimize(linear=linear, quadratic=quadratic)
+    qp.linear_constraint(
+        linear={name: 1 for name in ASSET_NAMES},
+        sense="==",
+        rhs=BUDGET,
+        name="budget_constraint",
+    )
+    return qp
+
+
+# ---------------------------------------------------------------
+# 3. Solve with QAOA
+# ---------------------------------------------------------------
+def solve_with_qaoa(qp):
+    sampler = Sampler()
+    qaoa = QAOA(sampler=sampler, optimizer=COBYLA(maxiter=150), reps=2)
+    optimizer = MinimumEigenOptimizer(qaoa)
+    result = optimizer.solve(qp)
+    return result
+
+
+# ---------------------------------------------------------------
+# 4. Classical brute-force baseline
+# ---------------------------------------------------------------
+def solve_classically():
+    best_value = np.inf
+    best_combo = None
+    for combo in itertools.combinations(range(NUM_ASSETS), BUDGET):
+        ret = sum(expected_returns[i] for i in combo)
+        risk = sum(covariance[i][j] for i in combo for j in combo)
+        value = -ret + RISK_FACTOR * risk
+        if value < best_value:
+            best_value = value
+            best_combo = combo
+    return best_combo, best_value
+
+
+# ---------------------------------------------------------------
+# 5. Run + compare
+# ---------------------------------------------------------------
+def main():
+    qp = build_qubo()
+
+    print("Running QAOA (quantum)...")
+    quantum_result = solve_with_qaoa(qp)
+    quantum_selected = [
+        ASSET_NAMES[i] for i, v in enumerate(quantum_result.x) if v == 1
+    ]
+
+    print("Running classical brute-force baseline...")
+    classical_combo, classical_value = solve_classically()
+    classical_selected = [ASSET_NAMES[i] for i in classical_combo]
+
+    print("\n=== Results ===")
+    print(f"Quantum (QAOA) selection : {quantum_selected}")
+    print(f"Quantum objective value  : {quantum_result.fval:.4f}")
+    print(f"Classical selection      : {classical_selected}")
+    print(f"Classical objective value: {classical_value:.4f}")
+
+    # Simple comparison chart
+    labels = ["Quantum (QAOA)", "Classical (Brute-force)"]
+    values = [quantum_result.fval, classical_value]
+
+    plt.figure(figsize=(6, 4))
+    plt.bar(labels, values, color=["#7b2ff7", "#00c2a8"])
+    plt.ylabel("Objective value (lower = better)")
+    plt.title("QAOA vs Classical Portfolio Optimization")
+    plt.tight_layout()
+    plt.savefig("comparison_chart.png", dpi=150)
+    print("\nSaved comparison_chart.png")
+
+
+if __name__ == "__main__":
+    main()
