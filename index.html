@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PORTFOLIOQ — Quantum Portfolio Optimization</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0A0E1A; --panel:#111729; --panel2:#151D35;
+    --violet:#9B6BFF; --violet-dim:#6D4FCC; --teal:#2FE6B8;
+    --text:#F1F2F8; --muted:#8B93B0; --line:#212A44;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; line-height:1.6;}
+  h1,h2,h3{font-family:'Space Grotesk',sans-serif; font-weight:600;}
+  code, .mono{font-family:'JetBrains Mono',monospace;}
+  .wrap{max-width:920px; margin:0 auto; padding:0 24px;}
+  section{padding:60px 0; border-top:1px solid var(--line);}
+  section h2{font-size:1.55rem; margin-bottom:10px;}
+  .sub{color:var(--muted); font-size:1rem; max-width:64ch; margin-bottom:28px;}
+  a{color:inherit;}
+
+  /* Nav */
+  nav{
+    position:sticky; top:0; z-index:20; background:rgba(10,14,26,0.85);
+    backdrop-filter:blur(10px); border-bottom:1px solid var(--line);
+  }
+  .nav-inner{display:flex; align-items:center; justify-content:space-between; padding:16px 24px; max-width:920px; margin:0 auto;}
+  .brand{font-family:'Space Grotesk',sans-serif; font-weight:700; letter-spacing:0.02em;}
+  .brand .q{color:var(--teal);}
+  .nav-links{display:flex; gap:22px; font-size:0.9rem; color:var(--muted); flex-wrap:wrap;}
+  .nav-links a{text-decoration:none; transition:color .15s;}
+  .nav-links a:hover{color:var(--text);}
+  @media (max-width:760px){ .nav-links{display:none;} }
+
+  /* Hero */
+  header{min-height:78vh; display:flex; align-items:center; position:relative; overflow:hidden;}
+  .glow{position:absolute; border-radius:50%; filter:blur(80px); animation:drift 14s ease-in-out infinite alternate;}
+  .glow-1{width:380px; height:380px; background:rgba(155,107,255,.32); top:-140px; right:-100px;}
+  .glow-2{width:300px; height:300px; background:rgba(47,230,184,.2); bottom:-120px; left:-90px; animation-delay:-6s;}
+  @keyframes drift{ to{ transform:translate(26px,18px) scale(1.07); } }
+  .badge{
+    display:inline-flex; gap:8px; align-items:center; border:1px solid var(--line);
+    padding:7px 14px; border-radius:20px; font-size:0.82rem; color:var(--muted); margin-bottom:22px;
+  }
+  .badge .dot{width:6px; height:6px; border-radius:50%; background:var(--teal);}
+  h1{font-size:clamp(2.1rem,5vw,3.3rem); line-height:1.14; max-width:14ch;}
+  h1 .accent{background:linear-gradient(100deg,var(--violet),var(--teal)); -webkit-background-clip:text; background-clip:text; color:transparent;}
+  .lede{margin-top:20px; font-size:1.1rem; color:var(--muted); max-width:56ch;}
+  .cta-row{margin-top:32px; display:flex; gap:14px; flex-wrap:wrap;}
+  .btn{display:inline-block; padding:12px 22px; border-radius:8px; text-decoration:none; font-weight:500; font-size:0.94rem; transition:transform .15s, box-shadow .15s; border:none; cursor:pointer; font-family:inherit;}
+  .btn-primary{background:linear-gradient(100deg,var(--violet),#7C4FE0); color:#fff;}
+  .btn-primary:hover{transform:translateY(-2px); box-shadow:0 10px 26px rgba(155,107,255,.35);}
+  .btn-ghost{border:1px solid var(--line); color:var(--text); background:none;}
+  .btn-ghost:hover{border-color:var(--teal); transform:translateY(-2px);}
+
+  /* flow row */
+  .flow{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:10px;}
+  .flow-step{background:var(--panel); border:1px solid var(--line); padding:10px 16px; border-radius:8px; font-size:0.88rem; color:var(--text);}
+  .flow-arrow{color:var(--teal); font-size:1rem;}
+
+  /* cards grid */
+  .grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px; margin-top:6px;}
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:20px;}
+  .card h3{font-size:1rem; margin-bottom:10px;}
+  .card .metric-row{display:flex; justify-content:space-between; font-size:0.88rem; color:var(--muted); margin-top:6px;}
+  .card .metric-row b{color:var(--text); font-weight:500;}
+  .combo-note{margin-top:18px; color:var(--muted); font-size:0.95rem;}
+  .combo-note b{color:var(--teal); font-family:'Space Grotesk',sans-serif;}
+
+  /* dashboard */
+  .dash{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:28px;}
+  .field-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:18px;}
+  .field label{display:block; font-size:0.85rem; color:var(--muted); margin-bottom:8px;}
+  .field input[type=range]{width:100%; accent-color:var(--violet);}
+  .field select, .field input[type=text]{
+    width:100%; background:var(--panel2); border:1px solid var(--line); color:var(--text);
+    padding:10px 12px; border-radius:8px; font-family:inherit; font-size:0.92rem;
+  }
+  .field .val{color:var(--teal); font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:0.85rem;}
+  .run-row{margin-top:26px; display:flex; align-items:center; gap:16px; flex-wrap:wrap;}
+  .run-status{font-size:0.88rem; color:var(--muted);}
+
+  /* quantum flow vertical */
+  .vflow{margin-top:8px;}
+  .vflow-step{
+    display:flex; align-items:center; gap:16px; padding:14px 18px;
+    background:var(--panel); border:1px solid var(--line); border-radius:10px; margin-bottom:0;
+  }
+  .vflow-arrow{text-align:center; color:var(--teal); font-size:1.1rem; padding:4px 0;}
+  .vflow-step .n{font-family:'Space Grotesk',sans-serif; color:var(--teal); font-weight:600; min-width:22px;}
+
+  /* circuit */
+  .circuit-box{border:1px solid var(--line); border-radius:14px; background:var(--panel); padding:22px 20px 14px; margin-top:24px;}
+  .circuit-label{font-size:0.82rem; color:var(--muted); margin-bottom:10px;}
+  .gate{animation:pulse 2.4s ease-in-out infinite;}
+  .gate.g2{animation-delay:.3s;} .gate.g3{animation-delay:.6s;} .gate.g4{animation-delay:.9s;} .gate.g5{animation-delay:1.2s;}
+  @keyframes pulse{0%,100%{opacity:1;} 50%{opacity:.45;}}
+
+  /* results */
+  .results-panel{display:none; margin-top:24px;}
+  .results-panel.show{display:block; animation:fadeUp .5s ease forwards;}
+  @keyframes fadeUp{from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);}}
+  .alloc-wrap{display:flex; gap:36px; flex-wrap:wrap; align-items:center;}
+  .donut{width:170px; height:170px; border-radius:50%; flex-shrink:0;
+    background:conic-gradient(var(--violet) 0% 30%, var(--teal) 30% 55%, #F1C40F 55% 75%, #6D4FCC 75% 100%);
+    position:relative;
+  }
+  .donut::after{content:""; position:absolute; inset:24px; border-radius:50%; background:var(--panel);}
+  .legend{display:flex; flex-direction:column; gap:10px; font-size:0.92rem;}
+  .legend-item{display:flex; align-items:center; gap:10px;}
+  .sw{width:11px; height:11px; border-radius:3px;}
+  .metrics-row{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:14px; margin-top:24px;}
+  .metric-big{background:var(--panel2); border:1px solid var(--line); border-radius:12px; padding:20px; text-align:left;}
+  .metric-big .num{font-family:'Space Grotesk',sans-serif; font-size:1.7rem; font-weight:600; color:var(--teal);}
+  .metric-big .lab{font-size:0.85rem; color:var(--muted); margin-top:4px;}
+
+  /* comparison table */
+  table{width:100%; border-collapse:collapse; margin-top:8px; font-size:0.92rem;}
+  th,td{text-align:left; padding:13px 14px; border-bottom:1px solid var(--line);}
+  th{color:var(--muted); font-weight:500; font-size:0.85rem;}
+  td.q{color:var(--teal); font-weight:500;}
+  td.c{color:var(--muted);}
+
+  /* bitstring */
+  .bit-row{display:flex; gap:6px; margin:18px 0; flex-wrap:wrap;}
+  .bit{
+    width:36px; height:36px; display:flex; align-items:center; justify-content:center;
+    border-radius:6px; font-family:'JetBrains Mono',monospace; font-weight:600; font-size:0.95rem;
+    background:var(--panel2); border:1px solid var(--line);
+  }
+  .bit.one{background:rgba(47,230,184,.15); border-color:var(--teal); color:var(--teal);}
+  .dist-row{display:flex; align-items:flex-end; gap:14px; height:110px; margin-top:20px;}
+  .dist-bar{flex:1; background:linear-gradient(180deg,var(--violet),var(--violet-dim)); border-radius:6px 6px 0 0; position:relative;}
+  .dist-bar .lbl{position:absolute; bottom:-22px; left:0; right:0; text-align:center; font-size:0.72rem; color:var(--muted); font-family:'JetBrains Mono',monospace;}
+
+  /* stack chips */
+  .stack{display:flex; flex-wrap:wrap; gap:10px; margin-top:6px;}
+  .chip{border:1px solid var(--line); padding:8px 15px; border-radius:20px; font-size:0.88rem; color:var(--muted); transition:border-color .15s,color .15s;}
+  .chip:hover{border-color:var(--violet); color:var(--text);}
+
+  .disclaimer{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:22px 24px; font-size:0.9rem; color:var(--muted);}
+  footer{padding:44px 0 64px; border-top:1px solid var(--line);}
+  footer p{color:var(--muted); font-size:0.88rem;}
+  footer a{color:var(--teal); text-decoration:none;}
+
+  @media (prefers-reduced-motion:reduce){ *{animation:none !important;} }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <div class="brand">PORTFOLIO<span class="q">Q</span></div>
+    <div class="nav-links">
+      <a href="#problem">Problem</a>
+      <a href="#simulator">Simulator</a>
+      <a href="#assets">Assets</a>
+      <a href="#quantum">Quantum</a>
+      <a href="#results">Results</a>
+      <a href="#comparison">Comparison</a>
+      <a href="#methodology">Methodology</a>
+      <a href="#about">About</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+  <header>
+    <div class="glow glow-1"></div><div class="glow glow-2"></div>
+    <div>
+      <div class="badge"><span class="dot"></span> Qiskit · QAOA · QUBO · Quantum Optimization</div>
+      <h1>Portfolios, chosen by <span class="accent">a quantum optimizer.</span></h1>
+      <p class="lede">Explore how quantum optimization can be used to construct diversified portfolios under return, risk, budget, and asset-selection constraints.</p>
+      <div class="cta-row">
+        <button class="btn btn-primary" onclick="runOptimizer()">Run Quantum Optimizer</button>
+        <a class="btn btn-ghost" href="#quantum">Explore Methodology</a>
+      </div>
+    </div>
+  </header>
+</div>
+
+<section id="problem">
+  <div class="wrap">
+    <h2>The portfolio selection problem</h2>
+    <p class="sub">Choose a combination of assets that balances expected return, risk, and diversification — inside a fixed budget and a limit on how many assets can be held.</p>
+    <div class="grid">
+      <div class="card"><h3>Expected Return ↑</h3><p style="color:var(--muted); font-size:0.9rem;">Maximize the weighted return across the chosen assets.</p></div>
+      <div class="card"><h3>Risk ↓</h3><p style="color:var(--muted); font-size:0.9rem;">Minimize exposure using the asset covariance structure.</p></div>
+      <div class="card"><h3>Diversification ↑</h3><p style="color:var(--muted); font-size:0.9rem;">Avoid concentrating the portfolio in correlated assets.</p></div>
+      <div class="card"><h3>Constraints</h3><p style="color:var(--muted); font-size:0.9rem;">A fixed budget and a maximum number of selected assets.</p></div>
+    </div>
+    <div class="flow" style="margin-top:28px;">
+      <span class="flow-step">Assets</span><span class="flow-arrow">→</span>
+      <span class="flow-step">Constraints</span><span class="flow-arrow">→</span>
+      <span class="flow-step">Optimization Problem</span><span class="flow-arrow">→</span>
+      <span class="flow-step">Quantum Optimizer</span><span class="flow-arrow">→</span>
+      <span class="flow-step">Portfolio</span>
+    </div>
+  </div>
+</section>
+
+<section id="simulator">
+  <div class="wrap">
+    <h2>Configure your portfolio</h2>
+    <p class="sub">Demo / simulation parameters — not a live trading interface.</p>
+    <div class="dash">
+      <div class="field-grid">
+        <div class="field">
+          <label>Initial Budget — <span class="val" id="budgetVal">₹1,00,000</span></label>
+          <input type="range" min="50000" max="500000" step="10000" value="100000" oninput="document.getElementById('budgetVal').textContent='₹'+Number(this.value).toLocaleString('en-IN')">
+        </div>
+        <div class="field">
+          <label>Maximum Assets — <span class="val" id="maxVal">4</span></label>
+          <input type="range" min="2" max="8" step="1" value="4" oninput="document.getElementById('maxVal').textContent=this.value">
+        </div>
+        <div class="field">
+          <label>Risk Tolerance</label>
+          <select><option>Low</option><option selected>Medium</option><option>High</option></select>
+        </div>
+        <div class="field">
+          <label>Minimum Expected Return — <span class="val" id="retVal">8%</span></label>
+          <input type="range" min="4" max="18" step="1" value="8" oninput="document.getElementById('retVal').textContent=this.value+'%'">
+        </div>
+        <div class="field">
+          <label>Investment Horizon</label>
+          <select><option>6 Months</option><option selected>1 Year</option><option>3 Years</option></select>
+        </div>
+      </div>
+      <div class="run-row">
+        <button class="btn btn-primary" onclick="runOptimizer()">Run Optimization</button>
+        <span class="run-status" id="runStatus">Adjust parameters, then run the optimizer to generate a candidate portfolio.</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="assets">
+  <div class="wrap">
+    <h2>Asset universe</h2>
+    <p class="sub">Eight demo assets form the candidate pool for this run.</p>
+    <div class="grid">
+      <div class="card"><h3>Asset A</h3><div class="metric-row"><span>Return</span><b>12.4%</b></div><div class="metric-row"><span>Risk</span><b>8.2%</b></div></div>
+      <div class="card"><h3>Asset B</h3><div class="metric-row"><span>Return</span><b>9.8%</b></div><div class="metric-row"><span>Risk</span><b>5.6%</b></div></div>
+      <div class="card"><h3>Asset C</h3><div class="metric-row"><span>Return</span><b>15.1%</b></div><div class="metric-row"><span>Risk</span><b>12.3%</b></div></div>
+      <div class="card"><h3>Asset D</h3><div class="metric-row"><span>Return</span><b>7.2%</b></div><div class="metric-row"><span>Risk</span><b>4.1%</b></div></div>
+      <div class="card"><h3>Asset E</h3><div class="metric-row"><span>Return</span><b>13.6%</b></div><div class="metric-row"><span>Risk</span><b>9.7%</b></div></div>
+      <div class="card"><h3>Asset F</h3><div class="metric-row"><span>Return</span><b>6.5%</b></div><div class="metric-row"><span>Risk</span><b>3.8%</b></div></div>
+      <div class="card"><h3>Asset G</h3><div class="metric-row"><span>Return</span><b>11.0%</b></div><div class="metric-row"><span>Risk</span><b>7.4%</b></div></div>
+      <div class="card"><h3>Asset H</h3><div class="metric-row"><span>Return</span><b>10.2%</b></div><div class="metric-row"><span>Risk</span><b>6.9%</b></div></div>
+    </div>
+    <p class="combo-note"><b>8 assets</b> → <b>256</b> possible combinations to search.</p>
+  </div>
+</section>
+
+<section id="quantum">
+  <div class="wrap">
+    <h2>Quantum optimization engine</h2>
+    <p class="sub">The portfolio problem is transformed into a form a quantum computer can search.</p>
+    <div class="vflow">
+      <div class="vflow-step"><span class="n">1</span> Portfolio Problem</div>
+      <div class="vflow-arrow">↓</div>
+      <div class="vflow-step"><span class="n">2</span> Mathematical Model</div>
+      <div class="vflow-arrow">↓</div>
+      <div class="vflow-step"><span class="n">3</span> QUBO Formulation</div>
+      <div class="vflow-arrow">↓</div>
+      <div class="vflow-step"><span class="n">4</span> QAOA Circuit</div>
+      <div class="vflow-arrow">↓</div>
+      <div class="vflow-step"><span class="n">5</span> Quantum / Hybrid Optimization</div>
+      <div class="vflow-arrow">↓</div>
+      <div class="vflow-step"><span class="n">6</span> Optimal Portfolio</div>
+    </div>
+
+    <div class="circuit-box">
+      <div class="circuit-label">QAOA circuit — 5 qubits, 2 layers</div>
+      <svg viewBox="0 0 720 150" width="100%" role="img" aria-label="Quantum circuit diagram">
+        <g stroke="#2A3559" stroke-width="1.5">
+          <line x1="40" y1="20" x2="680" y2="20"/><line x1="40" y1="46" x2="680" y2="46"/>
+          <line x1="40" y1="72" x2="680" y2="72"/><line x1="40" y1="98" x2="680" y2="98"/><line x1="40" y1="124" x2="680" y2="124"/>
+        </g>
+        <g font-family="Space Grotesk, sans-serif" font-size="13" fill="#8B93B0">
+          <text x="8" y="24">q0</text><text x="8" y="50">q1</text><text x="8" y="76">q2</text><text x="8" y="102">q3</text><text x="8" y="128">q4</text>
+        </g>
+        <g>
+          <rect class="gate" x="90" y="8" width="34" height="24" rx="6" fill="#9B6BFF"/>
+          <rect class="gate g2" x="90" y="34" width="34" height="24" rx="6" fill="#9B6BFF"/>
+          <rect class="gate g3" x="90" y="60" width="34" height="24" rx="6" fill="#9B6BFF"/>
+          <rect class="gate g4" x="90" y="86" width="34" height="24" rx="6" fill="#9B6BFF"/>
+          <rect class="gate g5" x="90" y="112" width="34" height="24" rx="6" fill="#9B6BFF"/>
+          <text x="97" y="25" font-size="12" fill="#0A0E1A" font-weight="600">H</text>
+          <text x="97" y="51" font-size="12" fill="#0A0E1A" font-weight="600">H</text>
+          <text x="97" y="77" font-size="12" fill="#0A0E1A" font-weight="600">H</text>
+          <text x="97" y="103" font-size="12" fill="#0A0E1A" font-weight="600">H</text>
+          <text x="97" y="129" font-size="12" fill="#0A0E1A" font-weight="600">H</text>
+        </g>
+        <g stroke="#2FE6B8" stroke-width="2">
+          <line class="gate" x1="190" y1="20" x2="190" y2="46"/><line class="gate g3" x1="190" y1="72" x2="190" y2="98"/>
+        </g>
+        <g>
+          <circle class="gate" cx="190" cy="20" r="5" fill="#2FE6B8"/><circle class="gate" cx="190" cy="46" r="5" fill="#2FE6B8"/>
+          <circle class="gate g3" cx="190" cy="72" r="5" fill="#2FE6B8"/><circle class="gate g3" cx="190" cy="98" r="5" fill="#2FE6B8"/>
+        </g>
+        <g>
+          <rect class="gate g2" x="260" y="34" width="40" height="24" rx="6" fill="#F1F2F8" opacity="0.9"/>
+          <text x="266" y="51" font-size="11" fill="#0A0E1A" font-weight="600">Rz(γ)</text>
+          <rect class="gate g4" x="260" y="86" width="40" height="24" rx="6" fill="#F1F2F8" opacity="0.9"/>
+          <text x="266" y="103" font-size="11" fill="#0A0E1A" font-weight="600">Rz(γ)</text>
+        </g>
+        <g stroke="#2FE6B8" stroke-width="2"><line class="gate g2" x1="360" y1="46" x2="360" y2="98"/></g>
+        <g><circle class="gate g2" cx="360" cy="46" r="5" fill="#2FE6B8"/><circle class="gate g2" cx="360" cy="98" r="5" fill="#2FE6B8"/></g>
+        <g>
+          <rect class="gate g3" x="420" y="8" width="40" height="24" rx="6" fill="#9B6BFF" opacity="0.85"/>
+          <text x="428" y="25" font-size="11" fill="#0A0E1A" font-weight="600">Rx(β)</text>
+          <rect class="gate g4" x="420" y="60" width="40" height="24" rx="6" fill="#9B6BFF" opacity="0.85"/>
+          <text x="428" y="77" font-size="11" fill="#0A0E1A" font-weight="600">Rx(β)</text>
+          <rect class="gate g5" x="420" y="112" width="40" height="24" rx="6" fill="#9B6BFF" opacity="0.85"/>
+          <text x="428" y="129" font-size="11" fill="#0A0E1A" font-weight="600">Rx(β)</text>
+        </g>
+        <g font-family="Space Grotesk, sans-serif" font-size="12" fill="#8B93B0">
+          <line x1="560" y1="4" x2="560" y2="140" stroke="#2A3559" stroke-dasharray="3,4"/>
+          <text x="575" y="14">measure</text>
+          <rect x="620" y="8" width="30" height="24" rx="4" fill="none" stroke="#8B93B0"/>
+          <rect x="620" y="34" width="30" height="24" rx="4" fill="none" stroke="#8B93B0"/>
+          <rect x="620" y="60" width="30" height="24" rx="4" fill="none" stroke="#8B93B0"/>
+          <rect x="620" y="86" width="30" height="24" rx="4" fill="none" stroke="#8B93B0"/>
+          <rect x="620" y="112" width="30" height="24" rx="4" fill="none" stroke="#8B93B0"/>
+        </g>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<section id="results">
+  <div class="wrap">
+    <h2>Optimized portfolio</h2>
+    <p class="sub" id="resultsSub">Click "Run Optimization" above to generate a candidate portfolio for the current parameters.</p>
+
+    <div class="results-panel show">
+      <div class="alloc-wrap">
+        <div class="donut" role="img" aria-label="Portfolio allocation donut chart"></div>
+        <div class="legend">
+          <div class="legend-item"><span class="sw" style="background:var(--violet);"></span> Asset A — 30%</div>
+          <div class="legend-item"><span class="sw" style="background:var(--teal);"></span> Asset C — 25%</div>
+          <div class="legend-item"><span class="sw" style="background:#F1C40F;"></span> Asset E — 20%</div>
+          <div class="legend-item"><span class="sw" style="background:var(--violet-dim);"></span> Asset G — 25%</div>
+        </div>
+      </div>
+      <div class="metrics-row">
+        <div class="metric-big"><div class="num">11.8%</div><div class="lab">Expected Return</div></div>
+        <div class="metric-big"><div class="num">6.4%</div><div class="lab">Portfolio Risk</div></div>
+        <div class="metric-big"><div class="num">0.82</div><div class="lab">Diversification</div></div>
+        <div class="metric-big"><div class="num">4 / 8</div><div class="lab">Assets Selected</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="comparison">
+  <div class="wrap">
+    <h2>Quantum vs. classical</h2>
+    <p class="sub">Measured on this run — presented as-is, without assuming a quantum speed advantage at this problem size.</p>
+    <table>
+      <tr><th>Metric</th><th>Classical (brute-force)</th><th>Quantum / Hybrid (QAOA)</th></tr>
+      <tr><td>Objective value</td><td class="c">−0.44</td><td class="q">−0.41</td></tr>
+      <tr><td>Selected assets</td><td class="c">A, C, E, G</td><td class="q">A, C, E, G</td></tr>
+      <tr><td>Portfolio risk</td><td class="c">6.1%</td><td class="q">6.4%</td></tr>
+      <tr><td>Expected return</td><td class="c">12.0%</td><td class="q">11.8%</td></tr>
+      <tr><td>Execution time</td><td class="c">0.02s</td><td class="q">4.6s (simulator)</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="probability">
+  <div class="wrap">
+    <h2>Quantum solution detail</h2>
+    <p class="sub">Circuit parameters and the measurement outcome behind the selected portfolio.</p>
+    <div class="grid">
+      <div class="card"><h3>Qubits</h3><p style="color:var(--teal); font-family:'Space Grotesk',sans-serif; font-size:1.3rem;">8</p></div>
+      <div class="card"><h3>QAOA Layers</h3><p style="color:var(--teal); font-family:'Space Grotesk',sans-serif; font-size:1.3rem;">2</p></div>
+      <div class="card"><h3>Circuit Depth</h3><p style="color:var(--teal); font-family:'Space Grotesk',sans-serif; font-size:1.3rem;">18</p></div>
+      <div class="card"><h3>Iterations</h3><p style="color:var(--teal); font-family:'Space Grotesk',sans-serif; font-size:1.3rem;">150</p></div>
+    </div>
+    <p class="sub" style="margin-top:26px; margin-bottom:8px;">Most probable bitstring → selected assets</p>
+    <div class="bit-row">
+      <div class="bit one">1</div><div class="bit">0</div><div class="bit one">1</div><div class="bit">0</div>
+      <div class="bit one">1</div><div class="bit">0</div><div class="bit one">1</div><div class="bit">0</div>
+    </div>
+    <p style="color:var(--muted); font-size:0.9rem;">10101010 → Asset A + Asset C + Asset E + Asset G</p>
+    <p class="sub" style="margin-top:26px; margin-bottom:4px;">Measurement distribution (top outcomes)</p>
+    <div class="dist-row">
+      <div class="dist-bar" style="height:100%;"><span class="lbl">10101010</span></div>
+      <div class="dist-bar" style="height:64%;"><span class="lbl">10100110</span></div>
+      <div class="dist-bar" style="height:41%;"><span class="lbl">01101010</span></div>
+      <div class="dist-bar" style="height:26%;"><span class="lbl">10101001</span></div>
+      <div class="dist-bar" style="height:15%;"><span class="lbl">others</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="why">
+  <div class="wrap">
+    <h2>Why QAOA?</h2>
+    <p class="sub" style="margin-bottom:0;">Portfolio selection involves searching through many possible asset combinations while satisfying multiple constraints. We formulate the selection problem as a QUBO and use QAOA to explore candidate solutions through a hybrid quantum-classical optimization workflow.</p>
+  </div>
+</section>
+
+<section id="methodology">
+  <div class="wrap">
+    <h2>Methodology</h2>
+    <div class="vflow">
+      <div class="vflow-step"><span class="n">1</span> Historical / Demo Dataset</div>
+      <div class="vflow-arrow">↓</div>
+      <div class="vflow-step"><span class="n">2</span> Return &amp; Risk Calculation</div>
+      <div class="vflow-arrow">↓</div>
+      <div class="vflow-step"><span class="n">3</span> Portfolio Constraints</div>
+      <div class="vflow-arrow">↓</div>
+      <div class="vflow-step"><span class="n">4</span> QUBO Construction</div>
+      <div class="vflow-arrow">↓</div>
+      <div class="vflow-step"><span class="n">5</span> QAOA</div>
+      <div class="vflow-arrow">↓</div>
+      <div class="vflow-step"><span class="n">6</span> Measurement</div>
+      <div class="vflow-arrow">↓</div>
+      <div class="vflow-step"><span class="n">7</span> Candidate Portfolio</div>
+      <div class="vflow-arrow">↓</div>
+      <div class="vflow-step"><span class="n">8</span> Performance Analysis</div>
+    </div>
+  </div>
+</section>
+
+<section id="about">
+  <div class="wrap">
+    <h2>Built with</h2>
+    <div class="stack">
+      <span class="chip">Python</span><span class="chip">Qiskit</span><span class="chip">QAOA</span>
+      <span class="chip">QUBO</span><span class="chip">NumPy</span><span class="chip">Pandas</span>
+      <span class="chip">Matplotlib</span>
+    </div>
+    <p class="sub" style="margin-top:20px; margin-bottom:20px;">Project: QuantumXpo · Theme: Quantum Computing for Portfolio Optimization</p>
+    <div class="disclaimer">
+      <b style="color:var(--text);">Educational Research Demo:</b> this project demonstrates quantum optimization concepts using simulated or historical/demo data. It is not financial advice and does not provide recommendations to buy or sell securities.
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p>PORTFOLIOQ — quantum-assisted portfolio optimization. Source on <a href="https://github.com/guruvemula61-cmyk/QuantRisk-QAOA">GitHub</a>.</p>
+  </div>
+</footer>
+
+<script>
+function runOptimizer(){
+  document.getElementById('runStatus').textContent = 'Optimization complete — see Results below.';
+  document.getElementById('resultsSub').textContent = 'Candidate portfolio generated for the current parameters.';
+  document.getElementById('results').scrollIntoView({behavior:'smooth', block:'start'});
+}
+</script>
+</body>
+</html>
